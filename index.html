@@ -1,0 +1,720 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Colorado Bike Park Guide — Westminster/Broomfield</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;900&family=Barlow:wght@400;500;600&display=swap');
+  :root {
+    --dirt: #1A1A2E; --pine: #16213E; --sky: #0F3460; --gold: #E94560;
+    --orange: #E94560; --stone: #7A8BA5; --cream: #F0F2F5; --white: #FAFBFD;
+    --tier-a: #E94560; --tier-b: #0F9B58; --tier-c: #F5A623;
+    --shadow: 0 2px 12px rgba(0,0,0,0.12);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Barlow', sans-serif; background: var(--cream); color: #1A1A2E; min-height: 100vh; }
+
+  .hero { background: var(--pine); color: #fff; padding: 20px 16px 14px; position: sticky; top: 0; z-index: 100; box-shadow: 0 3px 20px rgba(0,0,0,0.5); }
+  .hero-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+  .hero-title { font-family: 'Barlow Condensed', sans-serif; font-weight: 900; font-size: clamp(20px,5vw,32px); line-height: 1; letter-spacing: -0.5px; text-transform: uppercase; }
+  .hero-title span { color: var(--gold); }
+  .hero-sub { font-size: 11px; color: #7A8BA5; margin-top: 4px; font-weight: 500; letter-spacing: 0.5px; text-transform: uppercase; }
+
+  .today-box { background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.12); border-radius: 8px; padding: 8px 12px; min-width: 160px; text-align: right; flex-shrink: 0; }
+  .today-date { font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 14px; color: #fff; }
+  .season-badge { font-size: 10px; font-weight: 600; margin-top: 4px; padding: 2px 7px; border-radius: 20px; display: inline-block; background: #0F9B58; color: #A0FFD0; }
+
+  .legend { display: flex; gap: 10px; margin-top: 8px; flex-wrap: wrap; }
+  .legend-item { display: flex; align-items: center; gap: 5px; font-size: 10px; color: #7A8BA5; }
+  .legend-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
+
+  .filters { display: flex; gap: 6px; margin-top: 12px; flex-wrap: wrap; align-items: center; }
+  .filter-label { font-size: 10px; color: #7A8BA5; font-weight: 600; letter-spacing: 0.5px; text-transform: uppercase; }
+  .filter-btn { font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 11px; letter-spacing: 0.5px; text-transform: uppercase; padding: 4px 10px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.2); background: transparent; color: #C0CDD8; cursor: pointer; transition: all 0.15s; }
+  .filter-btn.active { background: var(--gold); border-color: var(--gold); color: #fff; }
+  .filter-btn.emtb.active { background: #0F9B58; border-color: #0F9B58; }
+  .filter-btn.close.active { background: #F5A623; border-color: #F5A623; color: #1A1A2E; }
+
+  .main { padding: 14px; max-width: 900px; margin: 0 auto; }
+  .stats-bar { display: grid; grid-template-columns: repeat(4,1fr); gap: 8px; margin-bottom: 14px; }
+  .stat-card { background: var(--white); border-radius: 10px; padding: 10px 12px; box-shadow: var(--shadow); text-align: center; }
+  .stat-num { font-family: 'Barlow Condensed', sans-serif; font-weight: 900; font-size: 24px; line-height: 1; color: var(--gold); }
+  .stat-label { font-size: 9px; color: var(--stone); font-weight: 600; text-transform: uppercase; letter-spacing: 0.4px; margin-top: 2px; }
+
+  .grid { display: flex; flex-direction: column; gap: 12px; }
+  .park-card { background: var(--white); border-radius: 14px; box-shadow: var(--shadow); overflow: hidden; border-left: 5px solid var(--stone); transition: box-shadow 0.2s; }
+  .park-card.tier-a { border-left-color: var(--tier-a); }
+  .park-card.tier-b { border-left-color: var(--tier-b); }
+  .park-card.tier-c { border-left-color: var(--tier-c); }
+  .park-card.hidden { display: none; }
+
+  .card-header { padding: 12px 14px 10px; cursor: pointer; display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: start; user-select: none; }
+  .title-row { display: flex; align-items: center; gap: 7px; flex-wrap: wrap; }
+  .card-num { font-family: 'Barlow Condensed', sans-serif; font-weight: 900; font-size: 12px; color: var(--stone); background: var(--cream); border-radius: 4px; padding: 1px 5px; flex-shrink: 0; }
+  .card-name { font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 18px; line-height: 1.1; color: #1A1A2E; }
+  .tier-badge { font-size: 10px; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase; padding: 2px 6px; border-radius: 20px; flex-shrink: 0; }
+  .tier-badge.a { background: #FFE0E6; color: #C0002A; }
+  .tier-badge.b { background: #D0F5E4; color: #0A6B3D; }
+  .tier-badge.c { background: #FFF0D0; color: #8A5000; }
+  .tag { font-size: 10px; color: var(--gold); font-weight: 700; }
+
+  .meta-row { display: flex; gap: 10px; margin-top: 5px; flex-wrap: wrap; }
+  .meta-item { display: flex; align-items: center; gap: 3px; font-size: 11px; color: var(--stone); font-weight: 500; }
+  .badges-row { display: flex; gap: 5px; margin-top: 5px; flex-wrap: wrap; }
+
+  .pbadge { font-size: 10px; font-weight: 700; padding: 3px 8px; border-radius: 5px; display: inline-block; letter-spacing: 0.3px; }
+  .pbadge.paid { background: #FFF0D0; color: #8A5000; }
+  .pbadge.emtb-yes { background: #D0F5E4; color: #0A6B3D; }
+  .pbadge.emtb-no { background: #FFE0E6; color: #C0002A; }
+  .pbadge.emtb-partial { background: #FFF0D0; color: #8A5000; }
+  .pbadge.neutral { background: #EDE8DF; color: #5A4A3A; }
+  .pbadge.season { background: #E0EEFF; color: #1A3A7A; }
+
+  .chevron { font-size: 16px; color: var(--stone); transition: transform 0.2s; flex-shrink: 0; margin-top: 4px; }
+  .park-card.open .chevron { transform: rotate(180deg); }
+  .card-body { display: none; padding: 0 14px 14px; border-top: 1px solid #E8EDF2; }
+  .park-card.open .card-body { display: block; }
+
+  .desc { font-size: 13px; line-height: 1.6; color: #2A3A4A; margin-bottom: 8px; padding-top: 10px; }
+  .section-title { font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 12px; text-transform: uppercase; letter-spacing: 0.8px; color: var(--stone); margin: 12px 0 7px; display: flex; align-items: center; gap: 6px; }
+  .section-line { flex: 1; height: 1px; background: #E8EDF2; }
+
+  .access-box { background: var(--cream); border-radius: 10px; padding: 10px 12px; margin-bottom: 9px; font-size: 12.5px; line-height: 1.5; }
+  .access-box p { margin-bottom: 5px; }
+  .access-box p:last-child { margin-bottom: 0; }
+  .access-label { font-weight: 600; color: #1A1A2E; }
+
+  .info-box { border-radius: 10px; padding: 10px 12px; margin-bottom: 9px; font-size: 12.5px; line-height: 1.5; border-left: 3px solid; }
+  .info-box.ticket { background: #FFF8EC; border-color: #F5A623; }
+  .info-box.emtb-ok { background: #EDF7E6; border-color: #0F9B58; }
+  .info-box.emtb-warn { background: #FFF0D0; border-color: #F5A623; }
+  .info-box.emtb-no { background: #FFE8EC; border-color: #E94560; }
+  .info-box.note { background: #E8F0FF; border-color: #0F3460; }
+
+  .trail-table { width: 100%; border-collapse: collapse; font-size: 11.5px; margin-top: 4px; }
+  .trail-table th { text-align: left; font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 10px; letter-spacing: 0.5px; text-transform: uppercase; color: var(--stone); padding: 5px 7px; border-bottom: 2px solid #E8EDF2; }
+  .trail-table td { padding: 6px 7px; border-bottom: 1px solid #F0F2F5; vertical-align: top; line-height: 1.4; }
+  .trail-table tr:last-child td { border-bottom: none; }
+
+  .diff-pill { display: inline-block; font-size: 9px; font-weight: 700; padding: 1px 5px; border-radius: 20px; white-space: nowrap; color: #fff; }
+  .diff-green { background: #4CAF50; }
+  .diff-blue { background: #2196F3; }
+  .diff-black { background: #333; }
+  .diff-dbl { background: #D32F2F; }
+
+  .star { color: #F5A623; font-weight: 700; }
+
+  .links-row { display: flex; gap: 7px; flex-wrap: wrap; margin-top: 8px; }
+  .map-btn { display: inline-flex; align-items: center; gap: 5px; color: #fff; text-decoration: none; font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 12px; letter-spacing: 0.3px; padding: 6px 12px; border-radius: 7px; }
+
+  .review-box { background: var(--cream); border-radius: 8px; padding: 9px 11px; font-size: 12px; line-height: 1.5; color: #3A4A5A; margin-top: 8px; font-style: italic; border-left: 3px solid var(--gold); }
+  .review-stars { color: #F5A623; font-size: 12px; margin-bottom: 3px; font-style: normal; }
+  .review-source { font-style: normal; font-size: 10px; color: var(--stone); margin-top: 3px; font-weight: 600; }
+
+  .ref-card { background: var(--white); border-radius: 14px; padding: 14px; margin-top: 14px; box-shadow: var(--shadow); }
+  .footer { text-align: center; padding: 20px 14px; font-size: 10px; color: var(--stone); line-height: 1.6; }
+  .footer a { color: #0F9B58; }
+
+  @media (max-width: 480px) {
+    .hero { padding: 16px 12px 12px; }
+    .card-name { font-size: 16px; }
+    .trail-table { font-size: 10.5px; }
+    .trail-table th, .trail-table td { padding: 4px 5px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <div class="hero-top">
+    <div>
+      <div class="hero-title">Colorado <span>Bike Park</span> Guide</div>
+      <div class="hero-sub">🏔️ Westminster / Broomfield (80021) · Lift-Accessed Parks · Updated June 2026</div>
+    </div>
+    <div class="today-box">
+      <div class="today-date" id="todayDate">—</div>
+      <div class="season-badge" id="seasonBadge">Peak Season</div>
+    </div>
+  </div>
+  <div class="legend">
+    <div class="legend-item"><div class="legend-dot" style="background:var(--tier-a)"></div> Tier A — World-class destination</div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--tier-b)"></div> Tier B — Solid full-day park</div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--tier-c)"></div> Tier C — Smaller / casual</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#0F9B58"></div> ✅ eMTB on lifts</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#E94560"></div> ⛔ No eMTB on lifts</div>
+  </div>
+  <div class="filters">
+    <span class="filter-label">Filter:</span>
+    <button class="filter-btn active" onclick="applyFilter('all',this)">All</button>
+    <button class="filter-btn" onclick="applyFilter('a',this)">🏆 Tier A</button>
+    <button class="filter-btn" onclick="applyFilter('b',this)">⚡ Tier B</button>
+    <button class="filter-btn emtb" onclick="applyFilter('emtb',this)">✅ eMTB OK</button>
+    <button class="filter-btn close" onclick="applyFilter('close',this)">🏃 &lt;90 min</button>
+  </div>
+</div>
+
+<div class="main">
+  <div class="stats-bar">
+    <div class="stat-card"><div class="stat-num">8</div><div class="stat-label">Parks</div></div>
+    <div class="stat-card"><div class="stat-num">3</div><div class="stat-label">eMTB Lift OK</div></div>
+    <div class="stat-card"><div class="stat-num">67</div><div class="stat-label">Min Closest</div></div>
+    <div class="stat-card"><div class="stat-num">2hr</div><div class="stat-label">Max Drive</div></div>
+  </div>
+
+  <div class="grid" id="parkGrid">
+
+    <!-- ===== 1. TRESTLE ===== -->
+    <div class="park-card tier-a" data-tier="a" data-drive="75" data-emtb="yes">
+      <div class="card-header" onclick="toggleCard(this.parentElement)">
+        <div>
+          <div class="title-row">
+            <span class="card-num">#1</span>
+            <span class="card-name">Trestle Bike Park</span>
+            <span class="tier-badge a">🏆 Tier A</span>
+            <span class="tag">YOUR HOME PARK</span>
+          </div>
+          <div class="meta-row">
+            <span class="meta-item">🚗 ~75 min / 67 mi</span>
+            <span class="meta-item">📍 Winter Park, CO</span>
+            <span class="meta-item">🏔️ 40+ miles of trails</span>
+          </div>
+          <div class="badges-row">
+            <span class="pbadge paid">💛 Lift ticket required</span>
+            <span class="pbadge emtb-yes">✅ eMTB on all lifts</span>
+            <span class="pbadge season">Open daily · Full Time June 12</span>
+          </div>
+        </div>
+        <div class="chevron">▼</div>
+      </div>
+      <div class="card-body">
+        <p class="desc">The benchmark for everything else on this list. Fastest-growing bike park in North America, 40+ miles of lift-served gravity trails, three lifts, and the largest rental fleet in the US. Green to double black — all styles covered. Your preferred zone is the blue flow trails: Long Trail, Shy Ann, and Green World are the sweet spot. Open daily in summer, weekends only in spring.</p>
+
+        <div class="section-title">🚦 Access &amp; How It Works <div class="section-line"></div></div>
+        <div class="access-box">
+          <p><span class="access-label">Lifts:</span> Three lifts — Gemini Express (main), Panoramic Express (upper), and Iron Horse Express. Gemini gets you to the bulk of blue trails. Panoramic accesses upper expert terrain.</p>
+          <p><span class="access-label">eMTB:</span> eMTBs permitted on all three chairlifts and the gondola. No restrictions — Class 1 confirmed.</p>
+          <p><span class="access-label">Uphill access:</span> Free uphill pass available — sign waiver at Guest Services in Balcony House. Must be visible at all times on designated uphill routes.</p>
+          <p><span class="access-label">Parking:</span> Winter Park Resort base area. Pay parking on peak days. Arrive by 9am on weekends.</p>
+          <p><span class="access-label">Address:</span> 85 Parsenn Rd, Winter Park, CO 80482.</p>
+          <p><span class="access-label">Season:</span> Now open weekends. Full-time daily opens June 12, 2026. Closes late September / early October.</p>
+        </div>
+
+        <div class="info-box ticket">💛 <strong>Lift tickets required.</strong> Day tickets vary by date — book online in advance for best price. Season passes available. Twilight tickets (Fri/Sat 3–6:30pm) are a cheaper option. Military discount available with 48hr advance booking. Ikon Pass holders can add a Trestle season pass.</div>
+        <div class="info-box emtb-ok">✅ <strong>eMTB fully welcome.</strong> All lifts, all trails. No restrictions on your Copperhead. Best use: ride up in Eco/eMTB mode to explore, save battery for the shuttle back up on tougher climbs.</div>
+
+        <div class="section-title">🗺️ Key Trails — Blue Flow (Your Style) <div class="section-line"></div></div>
+        <table class="trail-table">
+          <thead><tr><th>Trail</th><th>Diff</th><th>Length</th><th>Character</th></tr></thead>
+          <tbody>
+            <tr><td><span class="star">★ Long Trail</span></td><td><span class="diff-pill diff-blue">Blue</span></td><td>~3 mi</td><td>Most popular flow trail. Berms, rollers, smooth line. The classic Trestle experience. No mandatory features.</td></tr>
+            <tr><td><span class="star">★ Shy Ann</span></td><td><span class="diff-pill diff-blue">Blue</span></td><td>~2 mi</td><td>Smooth, flowing, forested. Great rhythm sections and berms. Your go-to lap trail.</td></tr>
+            <tr><td><span class="star">★ Green World</span></td><td><span class="diff-pill diff-green">Green</span></td><td>5.0 mi</td><td>Longest trail in park. Buffed singletrack, berms, a few small technical moments. Good warm-up or end-of-day lap. Family-friendly.</td></tr>
+            <tr><td>Rainmaker</td><td><span class="diff-pill diff-blue">Blue</span></td><td>~2.5 mi</td><td>Long tabletop section at top, big berms throughout, some gaps on lower section. All jumps are tabletops or rollers — no mandatory gaps. The most airtime available on a blue.</td></tr>
+            <tr><td>Middle Boulevard</td><td><span class="diff-pill diff-blue">Blue/Black</span></td><td>~2 mi</td><td>Rock gardens + tabletops + flow sections. Mix of smooth and chunky. Good step-up from pure flow blues.</td></tr>
+            <tr><td>The Boulevard</td><td><span class="diff-pill diff-black">Blue/Black</span></td><td>1,587 ft descent</td><td>A bit of everything — rock gardens, tabletops, berms. Despite advanced rating, no huge imposing features. Lower section gets fast with bigger berms.</td></tr>
+            <tr><td>Trestle DH</td><td><span class="diff-pill diff-black">Black</span></td><td>~2 mi</td><td>More technical than flowy. Rocky sections throughout, some tight lines. Lower section opens up for fast finish. Good when you want chunk.</td></tr>
+            <tr><td>Banana Peel</td><td><span class="diff-pill diff-dbl">Dbl Black</span></td><td>~1.5 mi</td><td>Massive banked wooden berm entry, 20+ ft drops and gaps. Full slopestyle. Pro Line features require free orientation pass from Guest Services.</td></tr>
+          </tbody>
+        </table>
+
+        <div class="section-title">🔗 Links <div class="section-line"></div></div>
+        <div class="links-row">
+          <a href="https://maps.google.com/?q=Trestle+Bike+Park+Winter+Park+CO" target="_blank" class="map-btn" style="background:#16213E;">📍 Maps</a>
+          <a href="https://www.google.com/maps/dir/80021/85+Parsenn+Rd+Winter+Park+CO+80482" target="_blank" class="map-btn" style="background:#0F3460;">🚗 Directions</a>
+          <a href="https://www.trailforks.com/region/trestle-bike-park/" target="_blank" class="map-btn" style="background:#5A4A8A;">🗺️ Trailforks</a>
+          <a href="https://www.trestlebikepark.com/daily-tickets/" target="_blank" class="map-btn" style="background:#0F9B58;">🎫 Buy Tickets</a>
+        </div>
+        <div class="review-box">
+          <div class="review-stars">★★★★★ 4.8/5</div>
+          An excellent bike park with a huge selection. Well maintained grounds, great lift service, well signed and organized. Two lifts on the mountain means you don't battle crowds at the base every time — great advantage over other Colorado parks.
+          <div class="review-source">TripAdvisor / Singletracks community</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== 2. KEYSTONE ===== -->
+    <div class="park-card tier-a" data-tier="a" data-drive="85" data-emtb="yes">
+      <div class="card-header" onclick="toggleCard(this.parentElement)">
+        <div>
+          <div class="title-row">
+            <span class="card-num">#2</span>
+            <span class="card-name">Keystone Bike Park</span>
+            <span class="tier-badge a">🏆 Tier A</span>
+          </div>
+          <div class="meta-row">
+            <span class="meta-item">🚗 ~85 min / 75 mi</span>
+            <span class="meta-item">📍 Keystone, CO</span>
+            <span class="meta-item">🏔️ 55+ miles of trails</span>
+          </div>
+          <div class="badges-row">
+            <span class="pbadge paid">💛 Lift ticket required</span>
+            <span class="pbadge emtb-yes">✅ eMTB allowed on ski area trails</span>
+            <span class="pbadge season">Summer season</span>
+          </div>
+        </div>
+        <div class="chevron">▼</div>
+      </div>
+      <div class="card-body">
+        <p class="desc">One of the most raw and rugged lift-accessed parks in the US. 55+ miles of trails — heavy on technical, progressive terrain with rock gardens, drops, wooden features, and long sustained descents. More technical overall than Trestle — the greens here ride like blues. Rewarding for intermediate-to-advanced riders who want long, committing runs. Drop Zone is legendary.</p>
+
+        <div class="section-title">🚦 Access &amp; How It Works <div class="section-line"></div></div>
+        <div class="access-box">
+          <p><span class="access-label">Lifts:</span> Gondola (Argentina) from base to mid-mountain. River Run Gondola for main access. Lifts load/unload bikes for you — staff handles it.</p>
+          <p><span class="access-label">eMTB:</span> eMTBs permitted on ski area trails per Summit County policy. Confirmed for Keystone resort-managed terrain.</p>
+          <p><span class="access-label">Parking:</span> River Run Village base area. Free parking available in satellite lots with shuttle to base.</p>
+          <p><span class="access-label">Address:</span> 22010 US-6, Keystone, CO 80435.</p>
+          <p><span class="access-label">Season:</span> Summer — check keystoneresort.com for 2026 opening date (typically late June).</p>
+          <p><span class="access-label">Note:</span> Early season = gondola to mid-mountain only (~1/3 of trails open). Full mountain opens once snow clears upper terrain.</p>
+        </div>
+
+        <div class="info-box ticket">💛 <strong>Lift tickets required.</strong> Purchase at keystoneresort.com or on-site. Epic Pass holders check bike park access. Tickets typically cheaper than Trestle.</div>
+        <div class="info-box emtb-ok">✅ <strong>eMTB confirmed on ski area trails.</strong> Summit County policy explicitly permits eMTBs on resort-managed terrain at Keystone, Breckenridge, and Copper Mountain.</div>
+
+        <div class="section-title">🗺️ Key Trails <div class="section-line"></div></div>
+        <table class="trail-table">
+          <thead><tr><th>Trail</th><th>Diff</th><th>Character</th></tr></thead>
+          <tbody>
+            <tr><td><span class="star">★ Holy Diver</span></td><td><span class="diff-pill diff-black">Black</span></td><td>Old logging trail turned jump line. Six berms and a huge wooden ramp. One of the most unique trails at any Colorado park.</td></tr>
+            <tr><td>Cowboy Up</td><td><span class="diff-pill diff-black">Black</span></td><td>Long sustained descent, voted best route down by intermediate-advanced riders. Raw and committing.</td></tr>
+            <tr><td>Drop Zone</td><td><span class="diff-pill diff-black">Black/Dbl</span></td><td>Legendary terrain park-style DH. Rock ledges, ramps, 14-ft jump "Jaws." Progressive features from intermediate to expert. One of the best in the country.</td></tr>
+            <tr><td><span class="star">★ No-Brainer</span></td><td><span class="diff-pill diff-blue">Blue</span></td><td>Smooth, curvy, deliciously long. Berms weaving in and out of forest. Best pure flow option at Keystone.</td></tr>
+            <tr><td>Pan-Coaster</td><td><span class="diff-pill diff-blue">Blue/Black</span></td><td>Berms and jumps through the forest. Fun, punchy descent. Good mix of flow and commitment.</td></tr>
+            <tr><td>Blue/Green beginner zone</td><td><span class="diff-pill diff-green">Green/Blue</span></td><td>Base area skills park. New trails built for skills progression. Good warm-up area before committing to full descents.</td></tr>
+          </tbody>
+        </table>
+
+        <div class="section-title">🔗 Links <div class="section-line"></div></div>
+        <div class="links-row">
+          <a href="https://maps.google.com/?q=Keystone+Bike+Park+Keystone+CO" target="_blank" class="map-btn" style="background:#16213E;">📍 Maps</a>
+          <a href="https://www.google.com/maps/dir/80021/22010+US-6+Keystone+CO+80435" target="_blank" class="map-btn" style="background:#0F3460;">🚗 Directions</a>
+          <a href="https://www.trailforks.com/region/keystone-resort/" target="_blank" class="map-btn" style="background:#5A4A8A;">🗺️ Trailforks</a>
+          <a href="https://www.keystoneresort.com/explore-the-resort/activities-and-events/summer/mountain-biking.aspx" target="_blank" class="map-btn" style="background:#0F9B58;">🎫 Tickets</a>
+        </div>
+        <div class="review-box">
+          <div class="review-stars">★★★★½ 4.6/5</div>
+          If you're an intermediate to advanced rider this mountain is all-day fun. The blue and green trails flow really well, and the black trails are tight, steep, and challenging with elevated wood features. Staff loads/unloads your bike from the lift — great touch.
+          <div class="review-source">TripAdvisor / MTBparks community</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== 3. GRANBY RANCH ===== -->
+    <div class="park-card tier-b" data-tier="b" data-drive="80" data-emtb="yes">
+      <div class="card-header" onclick="toggleCard(this.parentElement)">
+        <div>
+          <div class="title-row">
+            <span class="card-num">#3</span>
+            <span class="card-name">Granby Ranch Bike Park</span>
+            <span class="tier-badge b">⚡ Tier B</span>
+          </div>
+          <div class="meta-row">
+            <span class="meta-item">🚗 ~80 min / 75 mi</span>
+            <span class="meta-item">📍 Granby, CO</span>
+            <span class="meta-item">🏔️ 40+ mi XC · DH park</span>
+          </div>
+          <div class="badges-row">
+            <span class="pbadge paid">💛 Bike Haul day ticket</span>
+            <span class="pbadge emtb-yes">✅ eMTB — all XC trails</span>
+            <span class="pbadge season">Wed–Sun · Opens June 4</span>
+          </div>
+        </div>
+        <div class="chevron">▼</div>
+      </div>
+      <div class="card-body">
+        <p class="desc">Smaller and more relaxed than Trestle — a good add-on day when you're already in Winter Park (20 min away). 40+ miles of XC trails, all eMTB-friendly, plus a lift-served downhill park on the Quickdraw Express. Less intense crowds, relaxed vibe, great views of Grand County. The XC trail network is the real highlight here — smooth berms, flow sections, and a great backdrop.</p>
+
+        <div class="section-title">🚦 Access &amp; How It Works <div class="section-line"></div></div>
+        <div class="access-box">
+          <p><span class="access-label">Lift:</span> Quickdraw Express chairlift. Operates Wed–Sun, 9:30am–5pm. Opening Day June 4, 2026.</p>
+          <p><span class="access-label">eMTB:</span> All 40+ miles of XC trails are explicitly eMTB-friendly per Granby Ranch. Lift-served downhill trails — check on-site for current eMTB lift policy.</p>
+          <p><span class="access-label">Tickets:</span> "Bike Haul Day Ticket" for lift + all trails. "Trail Access Day Ticket" for trails only (no lift). Season passes also available.</p>
+          <p><span class="access-label">Address:</span> 1000 Village Rd, Granby, CO 80446.</p>
+          <p><span class="access-label">Combo tip:</span> 20 minutes from Trestle — combine both parks for a two-day trip or morning/afternoon split.</p>
+        </div>
+
+        <div class="info-box emtb-ok">✅ <strong>All XC trails eMTB-friendly confirmed.</strong> 55 total eMTB-designated trails per Trailforks. Lift-served DH — verify current eMTB lift policy on-site when you arrive.</div>
+        <div class="info-box ticket">💛 <strong>Bike Haul Day Ticket required for lift access.</strong> Trail-only access is a separate (cheaper) ticket. Check granbyranch.com for current pricing.</div>
+
+        <div class="section-title">🗺️ Key Trails <div class="section-line"></div></div>
+        <table class="trail-table">
+          <thead><tr><th>Trail</th><th>Diff</th><th>Character</th></tr></thead>
+          <tbody>
+            <tr><td><span class="star">★ Strawberry Jam</span></td><td><span class="diff-pill diff-blue">Blue</span></td><td>830 ft descent — most elevation loss in park. Smooth berm/jump trail, described as "nice gradual silky smooth." The main flow descent.</td></tr>
+            <tr><td>Caribou</td><td><span class="diff-pill diff-blue">Blue</span></td><td>Top-rated trail in the park. Popular blue singletrack, downhill directional. Fast and fun.</td></tr>
+            <tr><td>Base Area Jump Line</td><td><span class="diff-pill diff-blue">Blue/Black</span></td><td>Berms and dirt jumps flowing into 3 large wooden/metal jumps at the bottom. The park's showpiece feature zone.</td></tr>
+            <tr><td>Fraser Canyon</td><td><span class="diff-pill diff-black">Black</span></td><td>Technical rocky trail with a number of large jumps including a large double-tier rock drop. Steepest trail in park at 8.2% avg grade.</td></tr>
+            <tr><td>XC Network</td><td><span class="diff-pill diff-green">Green/Blue</span></td><td>40+ miles of rolling XC singletrack. All eMTB-friendly. Great for exploring the Grand County landscape between DH laps.</td></tr>
+          </tbody>
+        </table>
+
+        <div class="section-title">🔗 Links <div class="section-line"></div></div>
+        <div class="links-row">
+          <a href="https://maps.google.com/?q=Granby+Ranch+Bike+Park+Granby+CO" target="_blank" class="map-btn" style="background:#16213E;">📍 Maps</a>
+          <a href="https://www.google.com/maps/dir/80021/1000+Village+Rd+Granby+CO+80446" target="_blank" class="map-btn" style="background:#0F3460;">🚗 Directions</a>
+          <a href="https://www.trailforks.com/region/granby-ranch/" target="_blank" class="map-btn" style="background:#5A4A8A;">🗺️ Trailforks</a>
+          <a href="https://granbyranch.com/bike/" target="_blank" class="map-btn" style="background:#0F9B58;">🎫 Tickets</a>
+        </div>
+        <div class="review-box">
+          <div class="review-stars">★★★★ 4.2/5</div>
+          Great place for a relaxed day on the bike. Less crowded than Winter Park, excellent XC network, and the downhill park is well-maintained. Perfect add-on to a Trestle trip — do Trestle in the morning, Granby in the afternoon.
+          <div class="review-source">Uncover Colorado / Trailforks community</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== 4. BRECKENRIDGE ===== -->
+    <div class="park-card tier-b" data-tier="b" data-drive="100" data-emtb="yes">
+      <div class="card-header" onclick="toggleCard(this.parentElement)">
+        <div>
+          <div class="title-row">
+            <span class="card-num">#4</span>
+            <span class="card-name">Breckenridge Bike Park</span>
+            <span class="tier-badge b">⚡ Tier B</span>
+          </div>
+          <div class="meta-row">
+            <span class="meta-item">🚗 ~100 min / 85 mi</span>
+            <span class="meta-item">📍 Breckenridge, CO</span>
+            <span class="meta-item">🏔️ Peak 8 · Colorado SuperChair</span>
+          </div>
+          <div class="badges-row">
+            <span class="pbadge paid">💛 Lift ticket required</span>
+            <span class="pbadge emtb-yes">✅ eMTB on ski area trails</span>
+            <span class="pbadge neutral">More relaxed vibe</span>
+          </div>
+        </div>
+        <div class="chevron">▼</div>
+      </div>
+      <div class="card-body">
+        <p class="desc">Breckenridge is known more for its XC town trails ("Breck is one big trailhead") than its bike park, but the lift-served terrain on Peak 8 via the Colorado SuperChair is solid fun. More relaxed and less intense than Trestle or Keystone. Can get very crowded due to tourist traffic at the base. Better for a half-day or as part of a Breck town trip.</p>
+
+        <div class="section-title">🚦 Access &amp; How It Works <div class="section-line"></div></div>
+        <div class="access-box">
+          <p><span class="access-label">Lift:</span> Colorado SuperChair at base of Peak 8. Single chairlift accessing lift-served bike park terrain.</p>
+          <p><span class="access-label">eMTB:</span> eMTBs permitted on ski area trails per Summit County / resort policy. Confirmed for Breckenridge resort-managed terrain.</p>
+          <p><span class="access-label">Crowd warning:</span> Breckenridge base area is a major tourist destination — crowds at the base can be significant on weekends. All lifts start from the base.</p>
+          <p><span class="access-label">Address:</span> 1599 Ski Hill Rd, Breckenridge, CO 80424.</p>
+          <p><span class="access-label">Season:</span> Check breckenridge.com for 2026 bike park opening date.</p>
+        </div>
+
+        <div class="info-box emtb-ok">✅ <strong>eMTB confirmed on ski area trails.</strong> Summit County policy explicitly permits eMTBs on resort terrain. Town trails (Middle Flume, XC network) — verify eMTB access separately as some are USFS-managed.</div>
+        <div class="info-box note">📍 <strong>Town trail network is the real draw.</strong> The lift-served park is smaller than Trestle or Keystone, but Breck's town-based XC trails (Middle Flume, etc.) are excellent if you want a mixed day.</div>
+
+        <div class="section-title">🗺️ Key Trails <div class="section-line"></div></div>
+        <table class="trail-table">
+          <thead><tr><th>Trail</th><th>Diff</th><th>Character</th></tr></thead>
+          <tbody>
+            <tr><td>Whirl</td><td><span class="diff-pill diff-green">Green</span></td><td>Short intro trail for still-learning riders. Good first run to get feel for the terrain.</td></tr>
+            <tr><td><span class="star">★ Dwight's</span></td><td><span class="diff-pill diff-blue">Blue/Black</span></td><td>Main lift-served descent. Winding route with rocky descents and narrow zips through forest. More technical than flow-focused.</td></tr>
+            <tr><td>Middle Flume Loop (town)</td><td><span class="diff-pill diff-blue">Blue</span></td><td>Most popular town trail. Lung-busting climb rewarded with breezy descent. Part of the massive Breck XC network. Check eMTB access before riding USFS sections.</td></tr>
+          </tbody>
+        </table>
+
+        <div class="section-title">🔗 Links <div class="section-line"></div></div>
+        <div class="links-row">
+          <a href="https://maps.google.com/?q=Breckenridge+Ski+Resort+Peak+8+Breckenridge+CO" target="_blank" class="map-btn" style="background:#16213E;">📍 Maps</a>
+          <a href="https://www.google.com/maps/dir/80021/1599+Ski+Hill+Rd+Breckenridge+CO+80424" target="_blank" class="map-btn" style="background:#0F3460;">🚗 Directions</a>
+          <a href="https://www.trailforks.com/region/breckenridge-ski-resort/" target="_blank" class="map-btn" style="background:#5A4A8A;">🗺️ Trailforks</a>
+          <a href="https://www.breckenridge.com/explore-the-resort/activities-and-events/summer/biking.aspx" target="_blank" class="map-btn" style="background:#0F9B58;">🎫 Tickets</a>
+        </div>
+        <div class="review-box">
+          <div class="review-stars">★★★★ 4.1/5</div>
+          Relaxed vibe — good for a half-day on the lift-served trails before exploring Breck's massive town trail network. Base area crowds can be a downside on weekends. Better for a mixed bike park + town trail day.
+          <div class="review-source">Colorado.com / Singletracks</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== 5. COPPER MOUNTAIN ===== -->
+    <div class="park-card tier-b" data-tier="b" data-drive="95" data-emtb="yes">
+      <div class="card-header" onclick="toggleCard(this.parentElement)">
+        <div>
+          <div class="title-row">
+            <span class="card-num">#5</span>
+            <span class="card-name">Copper Mountain Bike Park</span>
+            <span class="tier-badge b">⚡ Tier B</span>
+          </div>
+          <div class="meta-row">
+            <span class="meta-item">🚗 ~95 min / 80 mi</span>
+            <span class="meta-item">📍 Copper Mountain, CO</span>
+            <span class="meta-item">🏔️ Woodward Express lift</span>
+          </div>
+          <div class="badges-row">
+            <span class="pbadge paid">💛 Lift ticket required</span>
+            <span class="pbadge emtb-yes">✅ eMTB on ski area trails</span>
+            <span class="pbadge neutral">Family-friendly vibe</span>
+          </div>
+        </div>
+        <div class="chevron">▼</div>
+      </div>
+      <div class="card-body">
+        <p class="desc">Copper's "low-key" bike park is served by the Woodward Express lift. Great beginner-to-intermediate experience with a relaxed family-friendly atmosphere. Not as extensive as Trestle or Keystone, but the trails are well-designed and less intimidating. Good option for a mellow day or when you want less intensity. Woodward connection adds terrain park-style features.</p>
+
+        <div class="section-title">🚦 Access &amp; How It Works <div class="section-line"></div></div>
+        <div class="access-box">
+          <p><span class="access-label">Lift:</span> Woodward Express chairlift. Main access point for bike park terrain.</p>
+          <p><span class="access-label">eMTB:</span> eMTBs permitted on ski area trails. Summit County + resort policy confirmed for Copper Mountain.</p>
+          <p><span class="access-label">Vibe:</span> Family-friendly, relaxed atmosphere. Less intimidating than Keystone or Trestle for newer riders. Good for progression riding.</p>
+          <p><span class="access-label">Address:</span> 209 Ten Mile Circle, Copper Mountain, CO 80443.</p>
+          <p><span class="access-label">Season:</span> Check coppercolorado.com for 2026 bike park dates.</p>
+        </div>
+
+        <div class="info-box emtb-ok">✅ <strong>eMTB confirmed on ski area trails.</strong> Summit County policy covers Copper Mountain resort-managed terrain.</div>
+
+        <div class="section-title">🗺️ Key Trails <div class="section-line"></div></div>
+        <table class="trail-table">
+          <thead><tr><th>Trail</th><th>Diff</th><th>Character</th></tr></thead>
+          <tbody>
+            <tr><td><span class="star">★ No-Brainer</span></td><td><span class="diff-pill diff-blue">Blue</span></td><td>Smooth curvy flow trail — the standout run at Copper. Berms, natural feel. Best pure flow experience in the park.</td></tr>
+            <tr><td>Woodward Beginner Zone</td><td><span class="diff-pill diff-green">Green</span></td><td>Great intro area with Woodward-style progression features. Skills park at base. Good warm-up for any skill level.</td></tr>
+            <tr><td>Advanced Singletrack</td><td><span class="diff-pill diff-black">Black</span></td><td>Technical lines through upper mountain. More natural terrain than Trestle's built features.</td></tr>
+          </tbody>
+        </table>
+
+        <div class="section-title">🔗 Links <div class="section-line"></div></div>
+        <div class="links-row">
+          <a href="https://maps.google.com/?q=Copper+Mountain+Resort+CO" target="_blank" class="map-btn" style="background:#16213E;">📍 Maps</a>
+          <a href="https://www.google.com/maps/dir/80021/209+Ten+Mile+Circle+Copper+Mountain+CO+80443" target="_blank" class="map-btn" style="background:#0F3460;">🚗 Directions</a>
+          <a href="https://www.trailforks.com/region/copper-mountain-resort/" target="_blank" class="map-btn" style="background:#5A4A8A;">🗺️ Trailforks</a>
+          <a href="https://www.coppercolorado.com/summer/biking" target="_blank" class="map-btn" style="background:#0F9B58;">🎫 Tickets</a>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== 6. VAIL ===== -->
+    <div class="park-card tier-b" data-tier="b" data-drive="110" data-emtb="no">
+      <div class="card-header" onclick="toggleCard(this.parentElement)">
+        <div>
+          <div class="title-row">
+            <span class="card-num">#6</span>
+            <span class="card-name">Vail Bike Park</span>
+            <span class="tier-badge b">⚡ Tier B</span>
+          </div>
+          <div class="meta-row">
+            <span class="meta-item">🚗 ~110 min / 100 mi</span>
+            <span class="meta-item">📍 Vail, CO</span>
+            <span class="meta-item">🏔️ 2 greens · 6 blues · 9 blacks</span>
+          </div>
+          <div class="badges-row">
+            <span class="pbadge paid">💛 Lift ticket required</span>
+            <span class="pbadge emtb-partial">⚠️ eMTB — verify before going</span>
+            <span class="pbadge neutral">Sign waiver to access</span>
+          </div>
+        </div>
+        <div class="chevron">▼</div>
+      </div>
+      <div class="card-body">
+        <p class="desc">Excellent bike park terrain — most of the mountain is intermediate to expert, and the trails are well-maintained and long. Two green trails, six blue, nine blacks — heavily skewed toward experienced riders. Epic atmosphere. The liability waiver gets you access to miles of epic downhill. Worth the drive for a serious all-day session. Farthest option on this list.</p>
+
+        <div class="section-title">🚦 Access &amp; How It Works <div class="section-line"></div></div>
+        <div class="access-box">
+          <p><span class="access-label">Access:</span> Sign a liability waiver at Guest Services. After that, miles of downhill terrain open. No lift ticket cost noted — waiver-based access, but confirm current policy at vail.com.</p>
+          <p><span class="access-label">eMTB:</span> Vail's eMTB policy on lift-served terrain is not explicitly confirmed in current sources — verify directly at vail.com or call Guest Services before making the drive.</p>
+          <p><span class="access-label">Terrain:</span> 2 greens, 6 blues, 9 blacks. Most intermediate-to-expert. Green trails are limited — this is not a beginner park.</p>
+          <p><span class="access-label">Address:</span> 292 E Meadow Dr, Vail, CO 81657.</p>
+          <p><span class="access-label">Season:</span> Check vail.com for 2026 opening dates.</p>
+        </div>
+
+        <div class="info-box emtb-warn">⚠️ <strong>eMTB policy unconfirmed for lift access.</strong> Verify directly with Vail resort before making the 110-minute drive. Call Guest Services or check vail.com bike park FAQ.</div>
+
+        <div class="section-title">🗺️ Key Trails <div class="section-line"></div></div>
+        <table class="trail-table">
+          <thead><tr><th>Trail</th><th>Diff</th><th>Character</th></tr></thead>
+          <tbody>
+            <tr><td><span class="star">★ No-Brainer</span></td><td><span class="diff-pill diff-blue">Blue</span></td><td>Smooth, curvy, long — the best flow option at Vail. Berms weaving through forest. The go-to blue.</td></tr>
+            <tr><td>Pan-Coaster</td><td><span class="diff-pill diff-blue">Blue/Black</span></td><td>Berms and jumps in and out of forest. Punchy, fun, and committing.</td></tr>
+            <tr><td>Expert/Black network</td><td><span class="diff-pill diff-black">Black/Dbl</span></td><td>9 black trails — mostly technical and sustained. Best for experienced riders chasing big mountain DH.</td></tr>
+          </tbody>
+        </table>
+
+        <div class="section-title">🔗 Links <div class="section-line"></div></div>
+        <div class="links-row">
+          <a href="https://maps.google.com/?q=Vail+Ski+Resort+Vail+CO" target="_blank" class="map-btn" style="background:#16213E;">📍 Maps</a>
+          <a href="https://www.google.com/maps/dir/80021/292+E+Meadow+Dr+Vail+CO+81657" target="_blank" class="map-btn" style="background:#0F3460;">🚗 Directions</a>
+          <a href="https://www.trailforks.com/region/vail-mountain/" target="_blank" class="map-btn" style="background:#5A4A8A;">🗺️ Trailforks</a>
+          <a href="https://www.vail.com/explore-the-resort/activities-and-events/summer/biking.aspx" target="_blank" class="map-btn" style="background:#0F9B58;">🎫 Info</a>
+        </div>
+        <div class="review-box">
+          <div class="review-stars">★★★★½ 4.5/5</div>
+          Epic atmosphere and excellent long trails. Most of the mountain is best saved for experienced riders. Sign the waiver and go — miles of well-maintained downhill. No-Brainer and Pan-Coaster are the standout runs.
+          <div class="review-source">Colorado.com / Singletracks</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== 7. STEAMBOAT ===== -->
+    <div class="park-card tier-b" data-tier="b" data-drive="160" data-emtb="no">
+      <div class="card-header" onclick="toggleCard(this.parentElement)">
+        <div>
+          <div class="title-row">
+            <span class="card-num">#7</span>
+            <span class="card-name">Steamboat Bike Park</span>
+            <span class="tier-badge b">⚡ Tier B</span>
+          </div>
+          <div class="meta-row">
+            <span class="meta-item">🚗 ~160 min / 160 mi</span>
+            <span class="meta-item">📍 Steamboat Springs, CO</span>
+            <span class="meta-item">🏔️ 2,200 ft lift-served vertical</span>
+          </div>
+          <div class="badges-row">
+            <span class="pbadge paid">💛 Lift ticket required</span>
+            <span class="pbadge emtb-partial">⚠️ eMTB — verify before going</span>
+            <span class="pbadge neutral">Overnight trip recommended</span>
+          </div>
+        </div>
+        <div class="chevron">▼</div>
+      </div>
+      <div class="card-body">
+        <p class="desc">Steamboat has significantly expanded its downhill terrain — 2,200 vertical feet of lift-served trails now. Was once known only for XC, but the downhill park is now a legitimate destination. Rustler's Ridge (blue) has rollers, berms, and drops — classic flow trail style. At 160 minutes it's a long day-trip; better as an overnight stay. Beautiful setting.</p>
+
+        <div class="section-title">🚦 Access &amp; How It Works <div class="section-line"></div></div>
+        <div class="access-box">
+          <p><span class="access-label">Lift:</span> Gondola access to bike park. 2,200 ft of lift-served vertical — the most on this list after Trestle.</p>
+          <p><span class="access-label">eMTB:</span> Not explicitly confirmed for lift access — verify with Steamboat resort directly before making the 2hr 40min drive.</p>
+          <p><span class="access-label">Address:</span> 2305 Mt Werner Circle, Steamboat Springs, CO 80487.</p>
+          <p><span class="access-label">Season:</span> Check steamboat.com for 2026 opening dates.</p>
+          <p><span class="access-label">Best as:</span> Overnight trip — pair with a night in Steamboat Springs, which has a great downtown scene.</p>
+        </div>
+
+        <div class="info-box emtb-warn">⚠️ <strong>eMTB lift policy unconfirmed.</strong> Verify before making the 160-minute drive. Call Steamboat Guest Services or check steamboat.com.</div>
+
+        <div class="section-title">🗺️ Key Trails <div class="section-line"></div></div>
+        <table class="trail-table">
+          <thead><tr><th>Trail</th><th>Diff</th><th>Character</th></tr></thead>
+          <tbody>
+            <tr><td>Tenderfoot</td><td><span class="diff-pill diff-green">Green</span></td><td>3 miles, relatively easy cruise down the mountain. Good intro run for reading Steamboat's terrain.</td></tr>
+            <tr><td><span class="star">★ Rustler's Ridge</span></td><td><span class="diff-pill diff-blue">Blue</span></td><td>Most popular trail. Rollers, berms, and drops. The park's signature blue flow trail — classic style that suits your preferences.</td></tr>
+            <tr><td>Expert lines</td><td><span class="diff-pill diff-black">Black</span></td><td>Expanded expert terrain. Check current trail map at steamboat.com for latest additions.</td></tr>
+          </tbody>
+        </table>
+
+        <div class="section-title">🔗 Links <div class="section-line"></div></div>
+        <div class="links-row">
+          <a href="https://maps.google.com/?q=Steamboat+Ski+Resort+Steamboat+Springs+CO" target="_blank" class="map-btn" style="background:#16213E;">📍 Maps</a>
+          <a href="https://www.google.com/maps/dir/80021/2305+Mt+Werner+Circle+Steamboat+Springs+CO+80487" target="_blank" class="map-btn" style="background:#0F3460;">🚗 Directions</a>
+          <a href="https://www.trailforks.com/region/steamboat-springs/" target="_blank" class="map-btn" style="background:#5A4A8A;">🗺️ Trailforks</a>
+          <a href="https://www.steamboat.com/explore-the-resort/summer/biking" target="_blank" class="map-btn" style="background:#0F9B58;">🎫 Info</a>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== 8. SNOWMASS ===== -->
+    <div class="park-card tier-b" data-tier="b" data-drive="175" data-emtb="no">
+      <div class="card-header" onclick="toggleCard(this.parentElement)">
+        <div>
+          <div class="title-row">
+            <span class="card-num">#8</span>
+            <span class="card-name">Snowmass Bike Park</span>
+            <span class="tier-badge b">⚡ Tier B</span>
+          </div>
+          <div class="meta-row">
+            <span class="meta-item">🚗 ~175 min / 170 mi</span>
+            <span class="meta-item">📍 Snowmass Village, CO</span>
+            <span class="meta-item">🏔️ Aspen area · Multi-day trip</span>
+          </div>
+          <div class="badges-row">
+            <span class="pbadge paid">💛 Lift ticket required</span>
+            <span class="pbadge emtb-partial">⚠️ eMTB — verify before going</span>
+            <span class="pbadge neutral">Multi-day trip recommended</span>
+          </div>
+        </div>
+        <div class="chevron">▼</div>
+      </div>
+      <div class="card-body">
+        <p class="desc">Nearly 3 hours from Westminster — this is a destination trip, not a day ride. Snowmass has excellent bike park terrain in a stunning setting. Best approached as a 2–3 day Aspen-area adventure. The mountain is massive with long sustained descents. Worth it as a trip but too far for a casual day out.</p>
+
+        <div class="section-title">🚦 Access &amp; How It Works <div class="section-line"></div></div>
+        <div class="access-box">
+          <p><span class="access-label">Lift:</span> Elk Camp Gondola from Snowmass base. Main access point for bike park terrain.</p>
+          <p><span class="access-label">eMTB:</span> Not explicitly confirmed — verify with Snowmass resort before going.</p>
+          <p><span class="access-label">Address:</span> 100 Elbert Lane, Snowmass Village, CO 81615.</p>
+          <p><span class="access-label">Best as:</span> 2–3 day trip paired with Aspen-area riding. Combine with a night in Snowmass Village or Aspen.</p>
+          <p><span class="access-label">Season:</span> Check aspensnowmass.com for 2026 bike park dates.</p>
+        </div>
+
+        <div class="info-box emtb-warn">⚠️ <strong>eMTB lift policy unconfirmed.</strong> At 175 minutes each way, verify before making the drive. Check aspensnowmass.com or call Guest Services.</div>
+
+        <div class="section-title">🔗 Links <div class="section-line"></div></div>
+        <div class="links-row">
+          <a href="https://maps.google.com/?q=Snowmass+Ski+Resort+Snowmass+Village+CO" target="_blank" class="map-btn" style="background:#16213E;">📍 Maps</a>
+          <a href="https://www.google.com/maps/dir/80021/100+Elbert+Lane+Snowmass+Village+CO+81615" target="_blank" class="map-btn" style="background:#0F3460;">🚗 Directions</a>
+          <a href="https://www.trailforks.com/region/snowmass-ski-area/" target="_blank" class="map-btn" style="background:#5A4A8A;">🗺️ Trailforks</a>
+          <a href="https://www.aspensnowmass.com/our-mountains/snowmass/summer/biking" target="_blank" class="map-btn" style="background:#0F9B58;">🎫 Info</a>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- end grid -->
+
+  <!-- QUICK REF TABLE -->
+  <div class="ref-card" id="refCard">
+    <div class="section-title" style="margin-top:0; cursor:pointer;" onclick="document.getElementById('refTable').style.display=document.getElementById('refTable').style.display==='none'?'block':'none'">
+      📋 Quick Reference — All Parks <div class="section-line"></div> <span style="font-size:14px;">▼</span>
+    </div>
+    <div id="refTable">
+      <table class="trail-table" style="font-size:11px;">
+        <thead><tr><th>Park</th><th>Drive</th><th>eMTB Lifts</th><th>Cost</th><th>Season</th><th>Best For</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Trestle</strong></td><td>~75 min</td><td>✅ All lifts</td><td>Day ticket</td><td>June 12–Sep</td><td>Flow blues · Your home park</td></tr>
+          <tr><td><strong>Keystone</strong></td><td>~85 min</td><td>✅ Confirmed</td><td>Day ticket</td><td>Late June–Sep</td><td>Technical / progressive</td></tr>
+          <tr><td><strong>Granby Ranch</strong></td><td>~80 min</td><td>✅ XC confirmed</td><td>Bike Haul ticket</td><td>Wed–Sun · June 4</td><td>Relaxed / XC combo</td></tr>
+          <tr><td><strong>Breckenridge</strong></td><td>~100 min</td><td>✅ Ski area</td><td>Day ticket</td><td>Summer</td><td>Town trails + park combo</td></tr>
+          <tr><td><strong>Copper Mountain</strong></td><td>~95 min</td><td>✅ Ski area</td><td>Day ticket</td><td>Summer</td><td>Beginner-friendly / mellow</td></tr>
+          <tr><td><strong>Vail</strong></td><td>~110 min</td><td>⚠️ Verify first</td><td>Waiver access</td><td>Summer</td><td>Expert / long sustained DH</td></tr>
+          <tr><td><strong>Steamboat</strong></td><td>~160 min</td><td>⚠️ Verify first</td><td>Day ticket</td><td>Summer</td><td>Overnight trip</td></tr>
+          <tr><td><strong>Snowmass</strong></td><td>~175 min</td><td>⚠️ Verify first</td><td>Day ticket</td><td>Summer</td><td>Multi-day destination</td></tr>
+        </tbody>
+      </table>
+      <p style="font-size:10px; color:var(--stone); margin-top:9px;">⚠️ Always verify eMTB lift policies directly with each resort before visiting — policies can change season to season. Drive times from Westminster/Broomfield (80021).</p>
+    </div>
+  </div>
+
+</div><!-- end main -->
+
+<div class="footer">
+  Colorado Bike Park Guide · Updated June 2026 · Westminster/Broomfield (80021)<br>
+  Drive times from 8725 Parkland St, Broomfield CO 80021 · Lift-accessed parks only<br>
+  Always verify eMTB policies before visiting ·
+  <a href="https://www.trailforks.com" target="_blank">Trailforks</a> ·
+  <a href="https://www.trestlebikepark.com" target="_blank">Trestle</a>
+</div>
+
+<script>
+  // Date
+  const now = new Date();
+  const days = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  document.getElementById('todayDate').textContent = `${days[now.getDay()]}, ${months[now.getMonth()]} ${now.getDate()}`;
+  const mo = now.getMonth();
+  const badge = document.getElementById('seasonBadge');
+  if (mo >= 5 && mo <= 8) { badge.textContent = '🟢 Peak Season Open'; badge.style.background='#0F9B58'; badge.style.color='#A0FFD0'; }
+  else if (mo >= 3 && mo <= 4) { badge.textContent = '🟡 Partial / Weekend'; badge.style.background='#8A6500'; badge.style.color='#FFE080'; }
+  else { badge.textContent = '🔴 Off Season'; badge.style.background='#8A0020'; badge.style.color='#FFB0C0'; }
+
+  // Toggle
+  function toggleCard(card) { card.classList.toggle('open'); }
+
+  // Filter
+  function applyFilter(type, btn) {
+    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    let visible = 0;
+    document.querySelectorAll('.park-card').forEach(card => {
+      let show = true;
+      if (type === 'a') show = card.dataset.tier === 'a';
+      else if (type === 'b') show = card.dataset.tier === 'b';
+      else if (type === 'emtb') show = card.dataset.emtb === 'yes';
+      else if (type === 'close') show = parseInt(card.dataset.drive) <= 90;
+      card.classList.toggle('hidden', !show);
+      if (show) visible++;
+    });
+  }
+
+  // Force links to open in Safari (triggers Universal Links / app handoff)
+  document.addEventListener('click', function(e) {
+    const a = e.target.closest('a[href^="http"]');
+    if (a) { e.preventDefault(); window.open(a.href, '_blank'); }
+  });
+</script>
+</body>
+</html>
